@@ -2,7 +2,7 @@
 
 """
 
-Copyright (c) 2015 by SAS Institute
+Copyright (c) 2016 by SAS Institute
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -20,26 +20,22 @@ limitations under the License.
 
 @author: patrick.hall@sas.com
 
-Script using Python multiprocessing and PIL to complete independent image
-preprocessing tasks.
+Script using Python multiprocessing and PIL to generate small labeled images.
 
-Images are copied into n_process seperate folders and converted to greyscale.
-Original, full size images are coverted into x,y,z contours and written to csv.
-These countours serve as the background over which to lie interesting patches.
-Images are then tiled. Tiling can lead to the learning of translation-invariant
-features. This script also attempts to facilitate the learning of size-
-invariant features, by creating patches of different sizes by default. After
-patches are created they are the tested for pixel intensity variance to prevent
-nearly constant patches from entering the analysis. Patches with sufficently
+Images are copied into n_process (default 2) seperate folders and converted to 
+greyscale. Images are then tiled into smaller, square patches. After tiles are 
+created they are the tested for pixel intensity variance to prevent nearly 
+constant patches from entering the generated data set. Patches with sufficently
 varying pixel intensity values are then down- or up- sampled to a standard size
-(default 25 x 25). To help create rotation-invariant features, users may
-specify the -a option or set the angle constant in main. All patches, including
-any rotated copies are then flattened and collected into a single csv file,
-called 'patches.csv'. Patches.csv is located in out_dir. Patches.csv will 
-contain all pixel intensity values for each patch as a row vector. Each row of 
-patches.csv will also contain an original image id along with the upper-
-lefthand x and y values of the patch in the original image and the size and 
-angle of the patch. All pre-existing files from earlier runs of 
+(default 25 x 25). Users may also specify the -a (default 5) option or set the 
+angle constant in main to create additional rotated copies of each patch. All 
+patches, including any rotated copies are then flattened and collected into a 
+single csv file, called 'patches.csv'. Patches.csv is located in out_dir. 
+Patches.csv will contain all pixel intensity values for each patch as a row 
+vector. Each row of patches.csv will also contain an original image id along 
+with the upper-lefthand x and y values of the patch in the original image and 
+the size, angle, and label of the patch. Patches are labeled as containing 
+Frank (the cat) or not. All pre-existing files from earlier runs of 
 threaded_tile_r.py may be replaced or deleted by subsequent runs.
 
 Important constants:
@@ -48,17 +44,16 @@ n_process: (-p) Number of processes to use; the script will create this many
            chunks of image files and place them into working sub-directores,
            with names like out_dir/_chunk_dir<n>. (default=2)
 
-in_dir: (-i) Directory in which input images are located. This directory should
-        contain only image files of type JPG, PNG, BMP or TIFF. The files must
-        also have standard file extensions to be recognized by the script.
-        Files will be copied into their respective chunk directories before
-        being tiled, (and/or downsampled,) flattened, and converted to csv.
+in_dir: (-i) Directory in which input images are located. Files will be copied 
+        into their respective chunk directories before being tiled, (and/or 
+        downsampled,) flattened, and converted to csv. (default='./in')
 
 out_dir: (-o) Parent directory in which the sub-directories for each chunk of
          image files will be created. A large number temporary files will be
-         created in out_dir.
+         created in out_dir. Patches.csv is located in out_dir. 
+         (default='./out)
 
-debug: (-g) Leaves temporary files in out_dir. (default=False)
+debug: (-g) Leaves temporary files in out_dir. (default=True)
 
 downsample_size: (-d) Side length of downsampled square image patches measured
                  in pixels. By default image patches are downsampled before
@@ -69,17 +64,17 @@ downsample_size: (-d) Side length of downsampled square image patches measured
 variance_threshold: (-v) The standard deviation above which an image will be
                     flattened and saved to patches.csv. Used to prevent blank,
                     dark, or plain white images from being included in the
-                    analysis. (default is dependent on image size)
+                    generated data set. (default is dependent on image size)
 
 angle: (-a) Patches will be rotated this angle in degrees before being
        flattened and added to patches.csv. Patches are alternately rotated in
        positive and negative directions to prevent creating many copies of each
-       patch. (default=10)
+       patch. (default=5)
 
 Run threaded_tile_r.py from an IDE by setting constants in main OR by the
 command line. Example command line usage:
 
-$ python threaded_tile_r.py -i test_in -o test_out_r -g True -v 55
+$ python threaded_tile_r.py -i in -o out -v 55
 
 """
 
@@ -180,112 +175,6 @@ def chunk_files(n_process, in_dir, out_dir):
 
     print 'Done.'
 
-def map_convert_originals(i, out_dir):
-
-    """ Write original image file to csv as x,y,z contours. These countours are
-    used as the background over which to lie interesting patches.
-
-    Args:
-        i: Process index.
-        out_dir: Directory in which to create intermediate files and final
-                 originals.csv file.
-
-    Raises:
-        EnvironemtError: Problem creating csv file.
-    """
-
-    # local constants
-
-    process_name = multiprocessing.current_process().name
-    chunk_dir = out_dir + os.sep + '_chunk_dir' + str(i)
-    image_type_list = ['JPG', 'JPEG', 'PNG', 'BMP', 'TIFF']
-
-    # cycle through original images in chunk_dir and convert to csv using
-    # pandas
-
-    file_list = [name for name in os.listdir(chunk_dir)\
-                    if name.split('.')[-1].upper() in image_type_list]
-
-    for name in file_list:
-
-        print process_name + ': Converting ' + name + ' to csv ...'
-        chunk_file = chunk_dir + os.sep + name
-
-        out_csv_name = chunk_dir + os.sep + 'orig.' + name + '.csv'
-        try:
-            if os.path.exists(out_csv_name):
-                os.remove(out_csv_name, ignore_errors=True)
-            o = open(out_csv_name, 'wb')
-        except EnvironmentError as exception_:
-            print exception_
-            print 'Failed to create ' + out_csv_name + '!'
-            sys.exit(-1)
-
-        im = Image.open(chunk_file).convert('L')
-        w, h = im.size
-        x = np.tile(np.arange(w), h).T + 1
-        y = np.repeat(np.arange(h-1, -1, -1), w).T + 1
-        z = 255-np.asarray(im.getdata()).T
-
-        wr = csv.writer(o)
-        for i in range(0, w*h):
-            wr.writerow([x[i], y[i], z[i], name])
-
-        o.close()
-
-    print process_name + ': Done.'
-
-def reduce_join_original_csv(n_process, out_dir):
-
-    """ Creates out_dir/originals.csv, writes csv header to originals.csv, and
-    concatenates intermediate csv files into orginals.csv.
-
-    Args:
-        n_process: Number of processes specified by the user.
-        out_dir: Directory in which to create intermediate files and final
-                 originals.csv file.
-        debug: If true, preserves intermediate working directories.
-
-    Raises:
-        EnvironemtError: Problem creating csv file.
-    """
-
-    # create out_dir/originals.csv
-
-    out_csv_name = out_dir + os.sep + 'originals.csv'
-    try:
-        if os.path.exists(out_csv_name):
-            shutil.rmtree(out_csv_name, ignore_errors=True)
-        o = open(out_csv_name, 'wb')
-    except EnvironmentError as exception_:
-        print exception_
-        print 'Failed to create ' + out_csv_name + '!'
-        sys.exit(-1)
-
-    # write csv header to patches.csv
-
-    header = ['x', 'y', 'z', 'orig_name']
-
-    csv.writer(o).writerow(header)
-
-    # concatenate intermediate csv files into originals.csv
-
-    for i in range(0, n_process):
-
-        chunk_dir = out_dir + os.sep + '_chunk_dir' + str(i)
-
-        file_list = [name for name in os.listdir(chunk_dir)\
-                    if name.split('.')[0].upper() == 'ORIG']
-
-        for name in file_list:
-
-            in_csv_name = chunk_dir + os.sep + name
-            with open(in_csv_name) as n:
-                for line in n:
-                    o.write(line)
-
-    o.close()
-
 def map_make_tiles(i, out_dir, debug, downsample_size, variance_threshold,
                    angle):
 
@@ -319,7 +208,8 @@ def map_make_tiles(i, out_dir, debug, downsample_size, variance_threshold,
     process_name = multiprocessing.current_process().name
     chunk_dir = out_dir + os.sep + '_chunk_dir' + str(i)
     image_type_list = ['JPG', 'JPEG', 'PNG', 'BMP', 'TIFF']
-    tiles_per_short_side = 20
+    tiles_per_short_side = 100 # increase to create more patches 
+    min_size = 250 # decrease to create a more noisy classification problem
 
     # open intermediate csv for writing flattened images
 
@@ -346,6 +236,12 @@ def map_make_tiles(i, out_dir, debug, downsample_size, variance_threshold,
         w, h = im.size
         short_side_length = min(w, h)
 
+        # assign label
+        if name.upper().find('NOT') >= 0:
+            label = 0
+        else:
+            label = 1
+
         # check variance_threshold
         if variance_threshold == None:
             variance_threshold = short_side_length/60
@@ -358,8 +254,8 @@ def map_make_tiles(i, out_dir, debug, downsample_size, variance_threshold,
 
         # init size_
         np.random.seed(1234)
-        size_ = np.random.randint(short_side_length)
-
+        size_ = np.random.randint(min_size, short_side_length)
+        
         # create patches from each file #######################################
 
         reached_y_edge = False
@@ -421,14 +317,16 @@ def map_make_tiles(i, out_dir, debug, downsample_size, variance_threshold,
 
                     # flatten patches into row vector of pixel intensities
                     tile_list = list(tile.getdata())
-                    tile_list.extend([name, x_, y_, size_, angle_])
+
+                    #  add tile attributes, including label
+                    tile_list.extend([name, x_, y_, size_, angle_, label])
 
                     # save row vector to intermediate csv
                     wr.writerow(tile_list)
 
                 # init next iter
                 tile_counter +=1
-                size_ = np.random.randint(short_side_length)
+                size_ = np.random.randint(min_size, short_side_length)
 
     o.close()
     print process_name + ': Done.'
@@ -465,7 +363,7 @@ def reduce_join_tile_csv(n_process, out_dir, debug, tile_size):
     # write csv header to patches.csv
 
     header = ['pixel_' + str(j) for j in range(0, tile_size*tile_size)]
-    header.extend(['orig_name', 'x', 'y', 'size', 'angle'])
+    header.extend(['orig_name', 'x', 'y', 'size', 'angle', 'label'])
     csv.writer(o).writerow(header)
 
     # concatenate intermediate csv files into patches.csv
@@ -495,12 +393,12 @@ def main(argv):
     # init local vars to defaults
 
     n_process = 2
-    in_dir = None
-    out_dir = None
-    debug = False
+    in_dir = './in'
+    out_dir = './out'
+    debug = True
     downsample_size = 25
     variance_threshold = None
-    angle = 10
+    angle = 5
 
     # parse command line args and update dependent args
 
@@ -522,20 +420,14 @@ def main(argv):
             elif opt == '-a':
                 angle = int(arg)
             elif opt == '-h':
-                print 'Example usage: python threaded_tile.py -i <input directory> -o <output directory>'
+                print 'Example usage: python threaded_tile.py \
+-i <input directory> -o <output directory> -v <variance threshold>'
                 sys.exit(0)
     except getopt.GetoptError as exception_:
         print exception_
-        print 'Example usage: python threaded_tile.py -i <input directory> -o <output directory>'
+        print 'Example usage: python threaded_tile.py\
+-i <input directory> -o <output directory> -v <variance threshold>'
         sys.exit(-1)
-
-    if in_dir == None:
-        print 'Error: enter value for input directory (-i).'
-        raise Exception
-
-    if out_dir == None:
-        print 'Error: enter value for output directory (-o).'
-        raise Exception
 
     print '-------------------------------------------------------------------'
     print 'Proceeding with options: '
@@ -558,38 +450,6 @@ def main(argv):
 
     # multiprocessing map/reduce scheme to execute image manipulation tasks on
     # chunks of image files in parallel
-
-    # convert original images to contours in a csv file using multiprocessing
-    # store in temporary files
-
-    print '-------------------------------------------------------------------'
-    print 'Converting original images to csv ... '
-    tic = time.time()
-    processes = []
-    try:
-        for i in range(0, int(n_process)):
-            process_name = 'Process_' + str(i)
-            process = Process(target=map_convert_originals, name=process_name,\
-            args=(i, out_dir))
-            process.start()
-            processes.append(process)
-        for process_ in processes:
-            process_.join()
-        print 'Images converted in %.2f s.' % (time.time()-tic)
-    except BaseException as exception_:
-        print exception_
-        print 'ERROR: Could not convert original images to csv.'
-        print sys.exc_info()
-        exit(-1)
-
-    # reduce temporary contour csv files into a single large csv
-
-    print '-------------------------------------------------------------------'
-    print 'Combining original csv files ... '
-    tic = time.time()
-    reduce_join_original_csv(n_process, out_dir)
-    print 'Done.'
-    print 'Csv files combined in %.2f s.' % (time.time()-tic)
 
     # tile images using multiprocessing
     # store in temporary files

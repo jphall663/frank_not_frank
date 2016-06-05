@@ -1,2 +1,4 @@
-pics/temp
-pics/_chunk_dir*
+in/_chunk_dir*
+
+*.pyc
+out
