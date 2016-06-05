@@ -2,7 +2,7 @@
 
 """
 
-Copyright (c) 2016 by SAS Institute
+Copyright (c) 2016 by Patrick Hall, jpatrickhall@gmail.com
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -18,9 +18,9 @@ limitations under the License.
 
 -------------------------------------------------------------------------------
 
-@author: patrick.hall@sas.com
+@author: jpatrickhall@gmail.com
 
-Script using Python multiprocessing and PIL to generate small labeled images.
+Python script and raw images to generate a labeled image data set.
 
 Images are copied into n_process (default 2) seperate folders and converted to 
 greyscale. Images are then tiled into smaller, square patches. After tiles are 
