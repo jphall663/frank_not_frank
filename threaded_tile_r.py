@@ -20,11 +20,11 @@ limitations under the License.
 
 @author: jpatrickhall@gmail.com
 
-Python script and raw images to generate a labeled image data set.
+Python script and raw images to generate a labeled data set.
 
 Images are copied into n_process (default 2) seperate folders and converted to 
 greyscale. Images are then tiled into smaller, square patches. After tiles are 
-created they are the tested for pixel intensity variance to prevent nearly 
+created they are then tested for pixel intensity variance to prevent nearly 
 constant patches from entering the generated data set. Patches with sufficently
 varying pixel intensity values are then down- or up- sampled to a standard size
 (default 25 x 25). Users may also specify the -a (default 5) option or set the 
@@ -49,11 +49,12 @@ in_dir: (-i) Directory in which input images are located. Files will be copied
         downsampled,) flattened, and converted to csv. (default='./in')
 
 out_dir: (-o) Parent directory in which the sub-directories for each chunk of
-         image files will be created. A large number temporary files will be
+         image files will be created. A large number of temporary files will be
          created in out_dir. Patches.csv is located in out_dir. 
          (default='./out)
 
-debug: (-g) Leaves temporary files in out_dir. (default=True)
+debug: (-g) Leaves temporary files in out_dir. Also useful for generating
+       images files to read directly. (default=True)
 
 downsample_size: (-d) Side length of downsampled square image patches measured
                  in pixels. By default image patches are downsampled before
@@ -180,8 +181,8 @@ def map_make_tiles(i, out_dir, debug, downsample_size, variance_threshold,
 
     """ In each process: by default creates differently sized patches,
     conditionally creates rotated copies of the patches, tests patches for
-    sufficient pixel intensity variance, down-or up-samples the
-    patches, flattens patches into row vector of pixel intensities, and saves
+    sufficient pixel intensity variance, down- or up- samples the
+    patches, flattens patches into a row vector of pixel intensities, and saves
     row vector to intermediate csv. Variance threshold and rotation angle
     defaults can be overridden by setting constants in main or by command line
     options.
@@ -196,7 +197,7 @@ def map_make_tiles(i, out_dir, debug, downsample_size, variance_threshold,
                          downsampled before being flattened.
         variance_threshold: The standard deviation above which an image will be
                             flattened and saved to patches.csv.
-        angle: patches will be rotated this angle in degrees before being
+        angle: Patches will be rotated this angle in degrees before being
                flattened and added to patches.csv.
 
     Raises:
@@ -425,7 +426,7 @@ def main(argv):
                 sys.exit(0)
     except getopt.GetoptError as exception_:
         print exception_
-        print 'Example usage: python threaded_tile.py\
+        print 'Example usage: python threaded_tile.py \
 -i <input directory> -o <output directory> -v <variance threshold>'
         sys.exit(-1)
 

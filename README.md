@@ -1,6 +1,6 @@
 # frank_not_frank
 
-Python script and raw images to generate a labeled image data set.
+Python script and raw images to generate a labeled data set.
 
 Generated images are labeled as containing Frank (the cat) or not.
 
@@ -26,21 +26,21 @@ limitations under the License.
 
 ### Install required software
 
-Git client: https://git-scm.com/book/en/v2/Getting-Started-Installing-Git
+Git client - https://git-scm.com/book/en/v2/Getting-Started-Installing-Git
 
-Git lfs client https://git-lfs.github.com/
+Git LFS client - https://git-lfs.github.com/
 
-Anaconda Python: https://www.continuum.io/downloads
+Anaconda Python - https://www.continuum.io/downloads
 
 ### Fork and pull materials
 
-Fork the frank_not_frank repository from: https://github.com/jphall663/frank_not_frank.git
+Fork the frank_not_frank repository from https://github.com/jphall663/frank_not_frank.git
 
 Open a git bash terminal and enter the following statements on the git bash command line:
 
-`$ mkdir enlighten-apply`
+`$ mkdir frank_not_frank`
 
-`$ cd enlighten-apply`
+`$ cd frank_not_frank`
 
 `$ git init`
 
@@ -62,47 +62,30 @@ Open a git bash terminal and enter the following statements on the git bash comm
 
 Note that the threaded_tile_r.py script has several options that can be set within the main function of the script or invoked from the command line:
 
-#### n_process
+#### n_process (-p)
 
-n_process: (-p) Number of processes to use; the script will create this many
-           chunks of image files and place them into working sub-directores,
-           with names like out_dir/_chunk_dir<n>. (default=2)
+Number of processes to use; the script will create this many chunks of image files and place them into working sub-directores, with names like out_dir/_chunk_dir<n>. (default=2)
 
-#### in_dir
+#### in_dir (-i)
 
-in_dir: (-i) Directory in which input images are located. Files will be copied 
-        into their respective chunk directories before being tiled, (and/or 
-        downsampled,) flattened, and converted to csv. (default='./in')
+Directory in which input images are located. Files will be copied into their respective chunk directories before being tiled, (and/or downsampled,) flattened, and converted to csv. (default='./in')
 
-#### out_dir
+#### out_dir: (-o)
 
-out_dir: (-o) Parent directory in which the sub-directories for each chunk of
-         image files will be created. A large number temporary files will be
-         created in out_dir. Patches.csv is located in out_dir. 
-         (default='./out)
+Parent directory in which the sub-directories for each chunk of image files will be created. A large number of temporary files will be created in out_dir. Patches.csv is located in out_dir. (default='./out)
 
-#### debug
+#### debug (-g)
 
-debug: (-g) Leaves temporary files in out_dir. (default=True)
+Leaves temporary files in out_dir. Also useful for generating images files to read directly. (default=True)
 
-#### downsample_size
+#### downsample_size (-d)
 
-downsample_size: (-d) Side length of downsampled square image patches measured
-                 in pixels. By default image patches are downsampled before
-                 being flattened, resulting in each row vector of patches.csv
-                 containing downsample_size*downsample_size pixels intensity
-                 elements. (default=25)
+Side length of downsampled square image patches measured in pixels. By default image patches are downsampled before being flattened, resulting in each row vector of patches.csv containing downsample_size*downsample_size pixels intensity elements. (default=25)
 
-#### variance_threshold
+#### variance_threshold (-v)
 
-variance_threshold: (-v) The standard deviation above which an image will be
-                    flattened and saved to patches.csv. Used to prevent blank,
-                    dark, or plain white images from being included in the
-                    generated data set. (default is dependent on image size)
+The standard deviation above which an image will be flattened and saved to patches.csv. Used to prevent blank, dark, or plain white images from being included in the generated data set. (default is dependent on image size)
 
-#### angle
+#### angle (-a)
 
-angle: (-a) Patches will be rotated this angle in degrees before being
-       flattened and added to patches.csv. Patches are alternately rotated in
-       positive and negative directions to prevent creating many copies of each
-       patch. (default=5)
+Patches will be rotated this angle in degrees before being flattened and added to patches.csv. Patches are alternately rotated in positive and negative directions to prevent creating many copies of each patch. (default=5)
