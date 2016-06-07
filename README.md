@@ -44,19 +44,17 @@ Open a git bash terminal and enter the following statements on the git bash comm
 
 `$ git init`
 
+`$ git lfs install`
+
+`$ git lfs track "*.jpg"`
+
 `$ git remote add origin https://github.com/<your username>/frank_not_frank.git`
 
 `$ git remote add upstream https://github.com/jphall663/frank_not_frank.git`
 
 `$ git pull origin master`
 
-`$ git lfs install`
-
-`$ git lfs track "*.jpg"`
-
 ### Generate the image data set
-
-`$ cd frank_not_frank`
 
 `$ python threaded_tile_py.r`
 
