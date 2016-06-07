@@ -54,7 +54,7 @@ Open a git bash terminal and enter the following statements on the git bash comm
 
 ### Generate the image data set
 
-`$ python threaded_tile_py.r`
+`$ python threaded_tile_r.py`
 
 Note that the threaded_tile_r.py script has several options that can be set within the main function of the script or invoked from the command line:
 
