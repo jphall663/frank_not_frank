@@ -46,8 +46,6 @@ Open a git bash terminal and enter the following statements on the git bash comm
 
 `$ git lfs install`
 
-`$ git lfs track "*.jpg"`
-
 `$ git remote add origin https://github.com/<your username>/frank_not_frank.git`
 
 `$ git remote add upstream https://github.com/jphall663/frank_not_frank.git`
